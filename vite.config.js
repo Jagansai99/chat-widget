@@ -11,19 +11,29 @@ export default defineConfig({
   },
 
   // 👇 This section enables a "build" specifically for widget.js
-  build: {
-    lib: {
-      entry: "src/widget.jsx",   // your entry file for widget
-      name: "ChatWidget",
-      fileName: "chat-widget",
-      formats: ["iife"],        // single file, browser-ready
-    },
+  // build: {
+  //   lib: {
+  //     entry: "src/widget.jsx",   // your entry file for widget
+  //     name: "ChatWidget",
+  //     fileName: "chat-widget",
+  //     formats: ["iife"],        // single file, browser-ready
+  //   },
+  //   rollupOptions: {
+  //     output: {
+  //       globals: {
+  //         react: "React",
+  //         "react-dom": "ReactDOM",
+  //       },
+  //     },
+  //   },
+  // },
+    build: {
+    outDir: "dist",
     rollupOptions: {
+      input: "src/widget.jsx",
       output: {
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-        },
+        entryFileNames: "widget.js",
+        format: "es",
       },
     },
   },

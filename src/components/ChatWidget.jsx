@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 // material-ui
 import {
   Box,
@@ -24,6 +23,7 @@ import ChatMessages from "./ChatMessages";
 import { widgetStyles, widgetReposition, repositionStyles } from "../config";
 import { generateNumericId } from "../utils/generateId";
 import API from "../api";
+import bgCars from "../assets/bgCars.png";
 
 const options = {
   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -40,11 +40,9 @@ const ChatWidget = ({ botReposition }) => {
     '<img src="https://d3dqyamsdzq0rr.cloudfront.net/sia/images/loading-dots-01-unscreen.gif" style="width:46px">';
   const [responseLoading, setResponseLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState("");
   const [conversationData, setConversationData] = useState([]);
   const [width, setWidth] = useState(widgetStyles.width);
-  const [height, setHeight] = useState(widgetStyles.widgetHeight);
   const [messageCompHeight, setMessageCompHeight] = useState(
     widgetStyles.messageContainerheight
   );
@@ -115,52 +113,12 @@ const ChatWidget = ({ botReposition }) => {
     });
   }
 
-  function getUserData() {
-    const data = {
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      vendor: navigator.vendor,
-      screenHeight: window.screen.height,
-      screenWidth: window.screen.width,
-      innerHeight: window.innerHeight,
-      innerWidth: window.innerWidth,
-      colorDepth: window.screen.colorDepth,
-      pixelDepth: window.screen.pixelDepth,
-      devicePixelRatio: window.devicePixelRatio,
-      timezoneOffset: new Date().getTimezoneOffset(),
-      cookieEnabled: navigator.cookieEnabled,
-      online: navigator.onLine,
-    };
-
-    return data;
-  }
-
-  function buildRequestMetadata() {
-    let metadataObj = getUserData();
-    let platform = metadataObj.platform;
-    metadataObj.platformName = platform.name;
-    metadataObj.platformVersion = platform.version;
-    metadataObj.platformLayout = platform.layout;
-    metadataObj.platformOs = platform.os
-      ? platform.os.architecture +
-        " -bit," +
-        platform.os.family +
-        "," +
-        platform.os.version
-      : "";
-    metadataObj.platformDescription = platform.description;
-    metadataObj.platformProduct = platform.product;
-    metadataObj.platformManufacturer = platform.manufacturer;
-    return metadataObj;
-  }
-
   const handleMessageInput = (event) => {
     setMessage(event.target.value);
   };
 
   const handleKeyDown = (event) => {
-    if (responseLoading) return;
+    if (responseLoading || isListening) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       handleOnsend();
@@ -292,24 +250,27 @@ const ChatWidget = ({ botReposition }) => {
     handleOnsend("Hi", { display: "N" });
   };
 
-  const handleGetSelectedCar = (data) => {
-    if (!data?.id || responseLoading) return;
-    const d = new Date();
-    const newMessage = {
-      from: "user",
-      text: `<strong>${data?.name}</strong>`,
-      time: d.toLocaleTimeString([], options),
-    };
-    setConversationData((prevState) => [...prevState, newMessage]);
-    addLoadingIndicator();
-    const payload = {
-      message: `User selected car ${data?.name} (${data?.id})`,
-      carId: data?.id,
-      carName: data?.name,
-      session_id: sessionStorage.getItem("conversationId"),
-    };
-    handleGetBotResponse(payload);
-  };
+  const handleGetSelectedCar = useCallback(
+    (data) => {
+      if (!data?.id || responseLoading) return;
+      const d = new Date();
+      const newMessage = {
+        from: "user",
+        text: `<strong>${data?.displayLabel}</strong>`,
+        time: d.toLocaleTimeString([], options),
+      };
+      setConversationData((prevState) => [...prevState, newMessage]);
+      addLoadingIndicator();
+      const payload = {
+        message: `User selected car ${data?.displayLabel} (${data?.id})`,
+        carId: data?.id,
+        carName: data?.displayLabel,
+        session_id: sessionStorage.getItem("conversationId"),
+      };
+      handleGetBotResponse(payload);
+    },
+    [responseLoading]
+  );
 
   const startSpeechRecognition = () => {
     if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
@@ -414,14 +375,14 @@ const ChatWidget = ({ botReposition }) => {
                       }}
                     >
                       {/* <Typography
-                        sx={{
-                          color: "#ffffff",
-                          "& .beta-btn-base-css:hover": {
-                            cursor: "pointer",
-                          },
-                        }}
-                        dangerouslySetInnerHTML={{ __html: "Joulez" }}
-                      /> */}
+                          sx={{
+                            color: "#ffffff",
+                            "& .beta-btn-base-css:hover": {
+                              cursor: "pointer",
+                            },
+                          }}
+                          dangerouslySetInnerHTML={{ __html: "Joulez" }}
+                        /> */}
                       <img
                         src="https://drivejoulez.com/static/media/joulezIcon.1de6f93b79eb38f16d5582829aea0aba.svg"
                         alt="joulez"
@@ -441,31 +402,31 @@ const ChatWidget = ({ botReposition }) => {
                   spacing={1}
                 >
                   {/* <IconButton
-                    sx={{
-                      padding: "0px",
-                      marginLeft: "0px !important",
-                      width: "22px !important",
-                      outline: "none",
-                      "&.Mui-focusVisible": {
+                      sx={{
+                        padding: "0px",
+                        marginLeft: "0px !important",
+                        width: "22px !important",
                         outline: "none",
-                      },
-                      // fallback for browsers
-                      "&:focus": {
-                        outline: "none",
-                      },
-                    }}
-                   
-                  >
-                    <GoKebabHorizontal
-                      style={{
-                        width: "30px",
-                        height: "30px",
-                        transform: "rotate(270deg)",
-                        strokeWidth: "inherit",
-                        color: "#ffffff",
+                        "&.Mui-focusVisible": {
+                          outline: "none",
+                        },
+                        // fallback for browsers
+                        "&:focus": {
+                          outline: "none",
+                        },
                       }}
-                    />
-                  </IconButton> */}
+                    
+                    >
+                      <GoKebabHorizontal
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          transform: "rotate(270deg)",
+                          strokeWidth: "inherit",
+                          color: "#ffffff",
+                        }}
+                      />
+                    </IconButton> */}
 
                   <IconButton
                     title={!isMinimized ? "Minimize" : "Maximize"}
@@ -564,6 +525,8 @@ const ChatWidget = ({ botReposition }) => {
               height: messageCompHeight,
               display: "flex",
               transition: "height 0.5s ease, width 0.5s ease",
+              background: `linear-gradient(rgb(255 255 255 / 73%), rgba(255, 255, 255, .5)), url(${bgCars})`,
+              backgroundRepeat: "round",
             }}
             ref={chatMessagesRef}
             container
@@ -631,12 +594,15 @@ const ChatWidget = ({ botReposition }) => {
                     />
                   </FormControl>
                   <IconButton
-                    color="primary"
                     title={isListening ? "Stop speech" : "Start speech"}
                     sx={{
+                      color: "#725ce1",
                       position: "relative",
                       "&.Mui-focusVisible": { outline: "none" },
                       "&:focus": { outline: "none" },
+                      "&:hover": {
+                        backgroundColor: "#725ce126",
+                      },
                       overflow: "hidden",
                       backgroundColor: isListening
                         ? "rgba(25, 118, 210, 0.1)"
@@ -669,8 +635,15 @@ const ChatWidget = ({ botReposition }) => {
                     {!isListening ? <MdMicOff /> : <MdMic />}
                   </IconButton>
                   <IconButton
-                    color="primary"
                     disabled={responseLoading || !message?.length}
+                    sx={{
+                      color: "#725ce1",
+                      "&:hover": {
+                        backgroundColor: "#725ce126",
+                      },
+                      "&.Mui-focusVisible": { outline: "none" },
+                      "&:focus": { outline: "none" },
+                    }}
                     onClick={() => handleOnsend()}
                   >
                     <MdSend />
