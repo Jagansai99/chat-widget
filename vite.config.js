@@ -27,14 +27,7 @@ export default defineConfig({
   //     },
   //   },
   // },
-    build: {
+      build: {
     outDir: "dist",
-    rollupOptions: {
-      input: "src/widget.jsx",
-      output: {
-        entryFileNames: "widget.js",
-        format: "es",
-      },
-    },
   },
 });
