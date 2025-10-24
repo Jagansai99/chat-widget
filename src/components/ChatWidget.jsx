@@ -12,12 +12,20 @@ import {
   FormControl,
   InputBase,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 
 // project import
 import { MdOutlineClose, MdSend } from "react-icons/md";
 import { BsBoxArrowInLeft } from "react-icons/bs";
-import { MdOutlineMinimize, MdMic, MdMicOff } from "react-icons/md";
+import {
+  MdOutlineMinimize,
+  MdMic,
+  MdMicOff,
+  MdOutlineZoomOutMap,
+  MdOutlineZoomInMap,
+} from "react-icons/md";
 import { BsBoxArrowInRight } from "react-icons/bs";
 import ChatMessages from "./ChatMessages";
 import { widgetStyles, widgetReposition, repositionStyles } from "../config";
@@ -36,13 +44,18 @@ let recognition;
 
 const ChatWidget = ({ botReposition }) => {
   const rePosition = botReposition || widgetReposition;
+  const theme = useTheme();
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up("sm"));
+
   const LOADING_GIF_HTML_TAG =
     '<img src="https://d3dqyamsdzq0rr.cloudfront.net/sia/images/loading-dots-01-unscreen.gif" style="width:46px">';
   const [responseLoading, setResponseLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [conversationData, setConversationData] = useState([]);
-  const [width, setWidth] = useState(widgetStyles.width);
+  const [width, setWidth] = useState(
+    isLargeScreen ? widgetStyles.width : "350px"
+  );
   const [messageCompHeight, setMessageCompHeight] = useState(
     widgetStyles.messageContainerheight
   );
@@ -129,7 +142,7 @@ const ChatWidget = ({ botReposition }) => {
     e.preventDefault();
     setIsOpen(false);
     setConversationData([]);
-    setWidth(widgetStyles.width);
+    setWidth(isLargeScreen ? widgetStyles.width : "350px");
     setIsToggleWidth(false);
     setIsMinimized(false);
     setMessageCompHeight(widgetStyles.messageContainerheight);
@@ -186,6 +199,9 @@ const ChatWidget = ({ botReposition }) => {
             text: res?.reply,
             time: d.toLocaleTimeString([], options),
           };
+          if (res?.suggestions?.length > 0) {
+            newMessage["suggestions"] = res.suggestions;
+          }
           setConversationData((prevState) => [...prevState, newMessage]);
           if (res?.data) {
             const allCarsData = Object.values(res.data)
@@ -272,6 +288,26 @@ const ChatWidget = ({ botReposition }) => {
     [responseLoading]
   );
 
+  const handleGetSelectedSuggestion = useCallback(
+    (input) => {
+      if (!input || responseLoading) return;
+      const d = new Date();
+      const newMessage = {
+        from: "user",
+        text: input,
+        time: d.toLocaleTimeString([], options),
+      };
+      setConversationData((prevState) => [...prevState, newMessage]);
+      addLoadingIndicator();
+      const payload = {
+        message: input,
+        session_id: sessionStorage.getItem("conversationId"),
+      };
+      handleGetBotResponse(payload);
+    },
+    [responseLoading]
+  );
+
   const startSpeechRecognition = () => {
     if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
       const SpeechRecognition =
@@ -318,20 +354,38 @@ const ChatWidget = ({ botReposition }) => {
         <IconButton
           onClick={handleBotIconClick}
           sx={{
-            width: 64,
-            height: 64,
+            width: 50,
+            height: 50,
             borderRadius: "50%",
-            bgcolor: "#000",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-            "&:hover": { bgcolor: "#333" },
+            bgcolor: "rgb(114, 92, 225)",
+            boxShadow: "0 0 20px 7px rgba(0,0,0,0.3)",
+            "&:hover": {
+              opacity: 1,
+              transition: "transform 0.16s linear, opacity 0.08s",
+              transform: "scale(1.1)",
+              bgcolor: "rgb(114, 92, 225)",
+            },
+            "&:focus": {
+              outline: "none",
+            },
           }}
         >
-          <img
+          {/* <img
             src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
             alt="bot"
             width="36"
             height="36"
-          />
+          /> */}
+          <svg
+            focusable="false"
+            aria-hidden="true"
+            fill="#ffffff"
+            viewBox="0 0 28 32"
+            width="24"
+            height="26"
+          >
+            <path d="M28,32 C28,32 23.2863266,30.1450667 19.4727818,28.6592 L3.43749107,28.6592 C1.53921989,28.6592 0,27.0272 0,25.0144 L0,3.6448 C0,1.632 1.53921989,0 3.43749107,0 L24.5615088,0 C26.45978,0 27.9989999,1.632 27.9989999,3.6448 L27.9989999,22.0490667 L28,22.0490667 L28,32 Z M23.8614088,20.0181333 C23.5309223,19.6105242 22.9540812,19.5633836 22.5692242,19.9125333 C22.5392199,19.9392 19.5537934,22.5941333 13.9989999,22.5941333 C8.51321617,22.5941333 5.48178311,19.9584 5.4277754,19.9104 C5.04295119,19.5629428 4.46760991,19.6105095 4.13759108,20.0170667 C3.97913051,20.2124916 3.9004494,20.4673395 3.91904357,20.7249415 C3.93763774,20.9825435 4.05196575,21.2215447 4.23660523,21.3888 C4.37862552,21.5168 7.77411059,24.5386667 13.9989999,24.5386667 C20.2248893,24.5386667 23.6203743,21.5168 23.7623946,21.3888 C23.9467342,21.2215726 24.0608642,20.9827905 24.0794539,20.7254507 C24.0980436,20.4681109 24.0195551,20.2135019 23.8614088,20.0181333 Z"></path>
+          </svg>
         </IconButton>
       </Box>
     );
@@ -452,46 +506,50 @@ const ChatWidget = ({ botReposition }) => {
                     />
                   </IconButton>
 
-                  <IconButton
-                    title={!isToggleWidth ? "Wide screen" : "Normal Screen"}
-                    sx={{
-                      padding: "2px",
-                      marginLeft: "0px !important",
-                      "&.Mui-focusVisible": {
-                        outline: "none",
-                      },
-                      "&:focus": {
-                        outline: "none",
-                      },
-                    }}
-                    onClick={handleToggleWidth}
-                  >
-                    {width === widgetStyles.width ? (
-                      <BsBoxArrowInLeft
-                        style={{
-                          width: "28px",
-                          height: "24px",
-                          color: "#ffffff",
-                          transform:
-                            rePosition === "right"
-                              ? "rotate(0deg)"
-                              : "rotate(180deg)",
-                        }}
-                      />
-                    ) : (
-                      <BsBoxArrowInRight
-                        style={{
-                          width: "28px",
-                          height: "24px",
-                          color: "#ffffff",
-                          transform:
-                            rePosition === "right"
-                              ? "rotate(0deg)"
-                              : "rotate(180deg)",
-                        }}
-                      />
-                    )}
-                  </IconButton>
+                  {isLargeScreen && (
+                    <IconButton
+                      title={
+                        !isToggleWidth ? "Expand screen" : "Collapse screen"
+                      }
+                      sx={{
+                        padding: "2px",
+                        marginLeft: "0px !important",
+                        "&.Mui-focusVisible": {
+                          outline: "none",
+                        },
+                        "&:focus": {
+                          outline: "none",
+                        },
+                      }}
+                      onClick={handleToggleWidth}
+                    >
+                      {width === widgetStyles.width ? (
+                        <MdOutlineZoomOutMap
+                          style={{
+                            width: "28px",
+                            height: "24px",
+                            color: "#ffffff",
+                            // transform:
+                            //   rePosition === "right"
+                            //     ? "rotate(0deg)"
+                            //     : "rotate(180deg)",
+                          }}
+                        />
+                      ) : (
+                        <MdOutlineZoomInMap
+                          style={{
+                            width: "28px",
+                            height: "24px",
+                            color: "#ffffff",
+                            // transform:
+                            //   rePosition === "right"
+                            //     ? "rotate(0deg)"
+                            //     : "rotate(180deg)",
+                          }}
+                        />
+                      )}
+                    </IconButton>
+                  )}
 
                   <IconButton
                     title="Close"
@@ -544,6 +602,7 @@ const ChatWidget = ({ botReposition }) => {
                 data={conversationData}
                 isToggledWidth={isToggleWidth}
                 getSelectedCar={handleGetSelectedCar}
+                getSelectedSuggestion={handleGetSelectedSuggestion}
               />
             </Grid>
 

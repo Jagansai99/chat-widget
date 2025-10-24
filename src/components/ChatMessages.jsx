@@ -19,7 +19,12 @@ import {
 } from "@mui/material";
 import { widgetStyles } from "../config";
 
-const ChatMessages = ({ data, isToggledWidth, getSelectedCar }) => {
+const ChatMessages = ({
+  data,
+  isToggledWidth,
+  getSelectedCar,
+  getSelectedSuggestion,
+}) => {
   // scroll to bottom when new message is sent or received
   const containerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -79,6 +84,41 @@ const ChatMessages = ({ data, isToggledWidth, getSelectedCar }) => {
   //     });
   //   }
   // };
+
+  const handleShowButtons = (history, i) => {
+    return (
+      <Grid item xs={12} paddingBottom="14px" key={i}>
+        <Stack direction="column" spacing={1}>
+          {history?.suggestions?.length > 0 &&
+            history.suggestions.map((suggestion, index) => (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => getSelectedSuggestion(suggestion)}
+                sx={{
+                  backgroundColor: "#F7F6F5",
+                  minWidth: "100%",
+                  maxWidth: isToggledWidth ? "90%" : "70%",
+                  border: "1px solid",
+                  borderRadius: "20px",
+                  color: "#000000",
+                  "&:hover": {
+                    backgroundColor: "#725ce1",
+                    color: "#ffffff",
+                  },
+                  textTransform: "none",
+                  "&:focus": {
+                    outline: "none",
+                  },
+                }}
+              >
+                {suggestion}
+              </Button>
+            ))}
+        </Stack>
+      </Grid>
+    );
+  };
 
   const userMessages = (history, i) => {
     return (
@@ -185,6 +225,7 @@ const ChatMessages = ({ data, isToggledWidth, getSelectedCar }) => {
             <Typography align="left" variant="subtitle2" color="textSecondary">
               {history?.time}
             </Typography>
+            {i === data?.length - 1 && handleShowButtons(history, i)}
           </Box>
         )}
       </Stack>

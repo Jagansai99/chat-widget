@@ -148,12 +148,15 @@ const DisplayCarsData = ({
               "& .MuiPaginationItem-root": {
                 color: "#555",
                 "&:focus": { outline: "none" },
+                "&:hover": {
+                  backgroundColor: "#dedcdcff !important",
+                },
               },
-              "& .Mui-selected": {
-                backgroundColor: "#725ce1",
+              "& .MuiPaginationItem-root.Mui-selected": {
+                backgroundColor: "#725ce1 !important",
                 color: "#fff",
                 "&:hover": {
-                  backgroundColor: "#593cee",
+                  backgroundColor: "#593cee !important",
                 },
               },
             }}
