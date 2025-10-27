@@ -694,7 +694,7 @@ const ChatWidget = ({ botReposition }) => {
                     {!isListening ? <MdMicOff /> : <MdMic />}
                   </IconButton>
                   <IconButton
-                    disabled={responseLoading || !message?.length}
+                    disabled={responseLoading || !message?.trim()?.length}
                     sx={{
                       color: "#725ce1",
                       "&:hover": {
