@@ -404,10 +404,9 @@ const ChatWidget = ({ botReposition }) => {
 
   const transcribeVoiceMsg = async () => {
     setIsTranscribing(true);
-
     const simulateDelay = (ms) => new Promise((r) => setTimeout(r, ms));
     await simulateDelay(1000);
-    setMessage(transcriptMsg);
+    if(isListening) setMessage(transcriptMsg);
     stopSpeechRecognition();
   };
 
