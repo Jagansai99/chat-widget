@@ -127,6 +127,9 @@ const DisplayCarsData = ({
                   textOverflow: "ellipsis",
                   lineHeight: "1.25em",
                   minHeight: "2.5em",
+                  display: "flex !important",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {car.displayLabel}

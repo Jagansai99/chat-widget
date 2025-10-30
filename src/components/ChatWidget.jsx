@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 
 // project import
-import { MdOutlineClose, MdSend } from "react-icons/md";
+import { MdOutlineClose, MdSend, MdStop } from "react-icons/md";
 import { BsBoxArrowInLeft } from "react-icons/bs";
 import {
   MdOutlineMinimize,
@@ -32,6 +32,7 @@ import { widgetStyles, widgetReposition, repositionStyles } from "../config";
 import { generateNumericId } from "../utils/generateId";
 import API from "../api";
 import bgCars from "../assets/bgCars.png";
+import Waveform from "./Waveform";
 
 const options = {
   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -41,6 +42,7 @@ const options = {
 };
 
 let recognition;
+let isRecognitionActive = false;
 
 const ChatWidget = ({ botReposition }) => {
   const rePosition = botReposition || widgetReposition;
@@ -52,6 +54,8 @@ const ChatWidget = ({ botReposition }) => {
   const [responseLoading, setResponseLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [transcriptMsg, setTranscriptMsg] = useState("");
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [conversationData, setConversationData] = useState([]);
   const [width, setWidth] = useState(
     isLargeScreen ? widgetStyles.width : "350px"
@@ -64,6 +68,8 @@ const ChatWidget = ({ botReposition }) => {
   const chatContainerRef = useRef(null);
   const chatMessagesRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
+  const isListeningRef = useRef(false);
+  const inputRef = useRef(null);
 
   const useStyles = {
     containerStyle: {
@@ -308,32 +314,78 @@ const ChatWidget = ({ botReposition }) => {
     [responseLoading]
   );
 
+  useEffect(() => {
+    isListeningRef.current = isListening;
+    if (!isListening) {
+      const timer = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const el = inputRef.current;
+          const length = el.value.length;
+          el.setSelectionRange(length, length);
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isListening]);
+
   const startSpeechRecognition = () => {
     if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = true;
+        recognition.continuous = true;
+      }
 
-      recognition.lang = "en-US";
-      recognition.interimResults = true;
+      recognition.onstart = () => {
+        isRecognitionActive = true;
+        console.log("Recognition started");
+      };
 
       recognition.onresult = (event) => {
-        const transcript =
-          event.results[event.results.length - 1][0].transcript;
-        setMessage(transcript);
+        let fullTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript;
+        }
+        setTranscriptMsg(fullTranscript?.trim());
       };
 
       recognition.onend = () => {
-        setIsListening(false);
+        console.log("Recognition ended");
+        isRecognitionActive = false;
+        if (isListeningRef.current) {
+          setTimeout(() => {
+            if (!isRecognitionActive) recognition.start();
+          }, 300);
+        } else {
+          setIsListening(false);
+        }
       };
 
       recognition.onerror = (event) => {
         console.error("Error in speech recognition:", event.error);
-        setIsListening(false);
+        isRecognitionActive = false;
+        if (
+          (event.error === "no-speech" || event.error === "network") &&
+          isListeningRef.current
+        ) {
+          console.log("isListenging", isListeningRef.current);
+          setTimeout(() => {
+            if (!isRecognitionActive) recognition.start();
+          }, 500);
+        } else {
+          setIsListening(false);
+        }
       };
 
-      recognition.start();
-      setIsListening(true);
+      if (!isRecognitionActive && !isListening) {
+        recognition.start();
+        setIsListening(true);
+      }
     } else {
       console.log("Speech recognition is not supported in this browser");
       setIsListening(false);
@@ -341,10 +393,22 @@ const ChatWidget = ({ botReposition }) => {
   };
 
   const stopSpeechRecognition = () => {
-    if (recognition) {
+    if (recognition && isRecognitionActive) {
       recognition.stop();
+      isRecognitionActive = false;
       setIsListening(false);
+      setTranscriptMsg("");
+      setIsTranscribing(false);
     }
+  };
+
+  const transcribeVoiceMsg = async () => {
+    setIsTranscribing(true);
+
+    const simulateDelay = (ms) => new Promise((r) => setTimeout(r, ms));
+    await simulateDelay(1000);
+    setMessage(transcriptMsg);
+    stopSpeechRecognition();
   };
 
   // --- Bot Icon Floating Button ---
@@ -624,90 +688,168 @@ const ChatWidget = ({ botReposition }) => {
                   display: "flex",
                   alignItems: "center",
                   borderRadius: "22px",
-                  p: 1,
+                  p: isListening ? 0.5 : 1,
                   backgroundColor: "#F4F5F7",
                   border: "1px solid #ECE5DD",
                   mr: 2,
                   position: "relative",
                 }}
               >
-                <Box
-                  sx={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "end",
-                  }}
-                >
-                  <FormControl fullWidth>
-                    <InputBase
-                      fullWidth
-                      minRows={1}
-                      maxRows={2}
-                      multiline
-                      disabled={isListening}
-                      onChange={handleMessageInput}
-                      onKeyDown={handleKeyDown}
-                      value={message}
-                      placeholder="Type a message"
-                    />
-                  </FormControl>
-                  <IconButton
-                    title={isListening ? "Stop speech" : "Start speech"}
+                {!isListening ? (
+                  <Box
                     sx={{
-                      color: "#725ce1",
-                      position: "relative",
-                      "&.Mui-focusVisible": { outline: "none" },
-                      "&:focus": { outline: "none" },
-                      "&:hover": {
-                        backgroundColor: "#725ce126",
-                      },
-                      overflow: "hidden",
-                      backgroundColor: isListening
-                        ? "rgba(25, 118, 210, 0.1)"
-                        : "transparent",
-                      transition: "background-color 0.3s ease",
-                      ...(isListening && {
-                        "&::before": {
-                          content: '""',
-                          position: "absolute",
-                          inset: 0,
-                          borderRadius: "50%",
-                          background:
-                            "radial-gradient(circle, rgba(25,118,210,0.4) 0%, rgba(25,118,210,0) 70%)",
-                          animation: "waveGlow 0.9s infinite ease-in-out",
-                        },
-                        "@keyframes waveGlow": {
-                          "0%": { transform: "scale(1)", opacity: 0.8 },
-                          "50%": { transform: "scale(1.5)", opacity: 0.4 },
-                          "100%": { transform: "scale(1)", opacity: 0.8 },
-                        },
-                      }),
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "end",
                     }}
-                    disabled={responseLoading}
-                    onClick={() =>
-                      isListening
-                        ? stopSpeechRecognition()
-                        : startSpeechRecognition()
-                    }
                   >
-                    {!isListening ? <MdMicOff /> : <MdMic />}
-                  </IconButton>
-                  <IconButton
-                    disabled={responseLoading || !message?.trim()?.length}
-                    sx={{
-                      color: "#725ce1",
-                      "&:hover": {
-                        backgroundColor: "#725ce126",
-                      },
-                      "&.Mui-focusVisible": { outline: "none" },
-                      "&:focus": { outline: "none" },
-                    }}
-                    onClick={() => handleOnsend()}
-                  >
-                    <MdSend />
-                  </IconButton>
-                </Box>
+                    <FormControl fullWidth>
+                      <InputBase
+                        fullWidth
+                        minRows={1}
+                        maxRows={2}
+                        multiline
+                        disabled={isListening}
+                        onChange={handleMessageInput}
+                        onKeyDown={handleKeyDown}
+                        value={message}
+                        inputRef={inputRef}
+                        placeholder="Type a message"
+                      />
+                    </FormControl>
+                    {!message?.trim()?.length && (
+                      <IconButton
+                        title={"Start speech"}
+                        sx={{
+                          color: "#725ce1",
+                          position: "relative",
+                          "&.Mui-focusVisible": { outline: "none" },
+                          "&:focus": { outline: "none" },
+                          "&:hover": {
+                            backgroundColor: "#725ce126",
+                          },
+                          overflow: "hidden",
+                          backgroundColor: "transparent",
+                          transition: "background-color 0.3s ease",
+                        }}
+                        disabled={responseLoading}
+                        onClick={() => startSpeechRecognition()}
+                      >
+                        <MdMic />
+                      </IconButton>
+                    )}
+
+                    <IconButton
+                      disabled={responseLoading || !message?.trim()?.length}
+                      sx={{
+                        color: "#725ce1",
+                        "&:hover": {
+                          backgroundColor: "#725ce126",
+                        },
+                        "&.Mui-focusVisible": { outline: "none" },
+                        "&:focus": { outline: "none" },
+                      }}
+                      onClick={() => handleOnsend()}
+                    >
+                      <MdSend />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <Stack direction={"row"} alignItems={"center"} width="100%">
+                    <Button
+                      title="Cancel"
+                      sx={{
+                        height: "30px",
+                        width: "20px",
+                        minWidth: "32px",
+                        padding: "2px",
+                        "&.Mui-focusVisible": {
+                          outline: "none",
+                        },
+                        "&:focus": {
+                          outline: "none",
+                        },
+                        "&:hover": {
+                          transform: "scale(1.01)",
+                        },
+                      }}
+                      onClick={stopSpeechRecognition}
+                    >
+                      <MdOutlineClose
+                        style={{
+                          width: "28px",
+                          height: "24px",
+                          color: "#ffffff",
+                          background: "gray",
+                          padding: "2px",
+                          borderRadius: "30px",
+                        }}
+                      />
+                    </Button>
+                    <Box mx={"6px"} width="90%">
+                      {isTranscribing ? (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            height: "44px",
+                            gap: "8px",
+                          }}
+                        >
+                          <CircularProgress
+                            enableTrackSlot
+                            thickness={5}
+                            sx={{
+                              color: "#725ce1",
+                              "& .MuiCircularProgress-circle": {
+                                strokeDasharray: "40 80",
+                              },
+                            }}
+                            size={16}
+                          />
+                          <Typography fontSize={"14px"}>
+                            Transcribing...
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Waveform isListening={isListening} />
+                      )}
+                    </Box>
+                    <Button
+                      title="Stop"
+                      sx={{
+                        height: "30px",
+                        width: "20px",
+                        minWidth: "32px",
+                        padding: "2px",
+                        "&.Mui-focusVisible": {
+                          outline: "none",
+                        },
+                        "&:focus": {
+                          outline: "none",
+                        },
+                        "&:hover": {
+                          transform: "scale(1.01)",
+                        },
+                      }}
+                      onClick={transcribeVoiceMsg}
+                      disabled={isTranscribing}
+                    >
+                      <MdStop
+                        style={{
+                          width: "28px",
+                          height: "24px",
+                          color: "#ffffff",
+                          background: isTranscribing ? "#80808047" : "red",
+                          padding: "2px",
+                          borderRadius: "30px",
+                        }}
+                      />
+                    </Button>
+                  </Stack>
+                )}
               </Paper>
             </Grid>
           </Grid>
