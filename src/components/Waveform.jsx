@@ -53,7 +53,7 @@ const Waveform = ({ isListening }) => {
           const centerLine = height / 2;
           const AMPLITUDE_MULTIPLIER = 2.5;
           const dotRadius = 1.5;
-          const dotColor = "#8b5cf6";
+          const dotColor = "#000";
 
           ctx.clearRect(0, 0, width, height); // Clear the whole canvas every frame
 
