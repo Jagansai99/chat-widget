@@ -421,7 +421,7 @@ const ChatWidget = ({ botReposition }) => {
             height: 50,
             borderRadius: "50%",
             bgcolor: "rgb(114, 92, 225)",
-            boxShadow: "0 0 20px 7px rgba(0,0,0,0.3)",
+            boxShadow: "0 0 7px 2px rgba(0,0,0,0.3)",
             "&:hover": {
               opacity: 1,
               transition: "transform 0.16s linear, opacity 0.08s",
