@@ -1,33 +1,34 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  const isWidget = mode === "widget";
 
-  // Local dev server config (your ngrok setup is fine)
-  server: {
-    allowedHosts: ["nonrhetorical-insuperably-jenise.ngrok-free.dev"],
-    port: 5173,
-  },
-
-  // 👇 This section enables a "build" specifically for widget.js
-  // build: {
-  //   lib: {
-  //     entry: "src/widget.jsx",   // your entry file for widget
-  //     name: "ChatWidget",
-  //     fileName: "chat-widget",
-  //     formats: ["iife"],        // single file, browser-ready
-  //   },
-  //   rollupOptions: {
-  //     output: {
-  //       globals: {
-  //         react: "React",
-  //         "react-dom": "ReactDOM",
-  //       },
-  //     },
-  //   },
-  // },
-      build: {
-    outDir: "dist",
-  },
+  return {
+    plugins: [react()],
+    server: {
+      allowedHosts: ["nonrhetorical-insuperably-jenise.ngrok-free.dev"],
+      port: 5173,
+    },
+    build: isWidget
+      ? {
+          lib: {
+            entry: "src/widget.jsx",
+            name: "ChatWidget",
+            fileName: "chat-widget",
+            formats: ["iife"], // Standalone <script> build
+          },
+          rollupOptions: {
+            output: {
+              globals: {
+                react: "React",
+                "react-dom": "ReactDOM",
+              },
+            },
+          },
+        }
+      : {
+          outDir: "dist", // Normal React app build for Vercel
+        },
+  };
 });
