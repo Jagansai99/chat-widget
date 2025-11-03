@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, memo, useMemo } from "react";
 import DisplayCarsData from "./DisplayCarsData";
 import { FaUserLarge } from "react-icons/fa6";
 import { FaArrowDown } from "react-icons/fa6";
-
+ 
 // material-ui
 import {
   Button,
@@ -18,17 +18,18 @@ import {
   Fade,
 } from "@mui/material";
 import { widgetStyles } from "../config";
-
+ 
 const ChatMessages = ({
   data,
   isToggledWidth,
   getSelectedCar,
   getSelectedSuggestion,
+  getSelectedLocation,
 }) => {
   // scroll to bottom when new message is sent or received
   const containerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-
+ 
   const userBoxStyle = useMemo(
     () => ({
       display: "flex",
@@ -39,7 +40,7 @@ const ChatMessages = ({
     }),
     [isToggledWidth]
   );
-
+ 
   const botBoxStyle = useMemo(
     () => ({
       flexDirection: "column",
@@ -49,7 +50,7 @@ const ChatMessages = ({
     }),
     [isToggledWidth]
   );
-
+ 
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTo({
@@ -58,22 +59,22 @@ const ChatMessages = ({
       });
     }
   }, [data]);
-
+ 
   // const handleScroll = useCallback(() => {
   //   const el = containerRef.current;
   //   if (!el) return;
-
+ 
   //   const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   //   setShowScrollButton(!isNearBottom);
   // }, []);
-
+ 
   // useEffect(() => {
   //   const el = containerRef.current;
   //   if (!el) return;
   //   el.addEventListener("scroll", handleScroll);
   //   return () => el.removeEventListener("scroll", handleScroll);
   // }, [handleScroll]);
-
+ 
   // scroll to bottom on button click
   // const scrollToBottom = () => {
   //   const el = containerRef.current;
@@ -84,42 +85,149 @@ const ChatMessages = ({
   //     });
   //   }
   // };
-
+ 
+  // const handleShowButtons = (history, i) => {
+  //   return (
+  //     <Grid item xs={12} paddingBottom="14px" key={i}>
+  //       <Stack direction="column" spacing={1}>
+  //         {history?.suggestions?.length > 0 &&
+  //           history.suggestions.map((suggestion, index) => (
+  //             <Button
+  //               variant="contained"
+  //               color="primary"
+  //               onClick={() => getSelectedSuggestion(suggestion)}
+  //               sx={{
+  //                 backgroundColor: "#F7F6F5",
+  //                 minWidth: "100%",
+  //                 maxWidth: isToggledWidth ? "90%" : "70%",
+  //                 border: "1px solid",
+  //                 borderRadius: "20px",
+  //                 color: "#000000",
+  //                 "&:hover": {
+  //                   backgroundColor: "#725ce1",
+  //                   color: "#ffffff",
+  //                 },
+  //                 textTransform: "none",
+  //                 "&:focus": {
+  //                   outline: "none",
+  //                 },
+  //               }}
+  //             >
+  //               {suggestion}
+  //             </Button>
+  //           ))}
+  //       </Stack>
+  //     </Grid>
+  //   );
+  // };
+ 
   const handleShowButtons = (history, i) => {
     return (
       <Grid item xs={12} paddingBottom="14px" key={i}>
         <Stack direction="column" spacing={1}>
+          {/* Suggestions */}
           {history?.suggestions?.length > 0 &&
             history.suggestions.map((suggestion, index) => (
               <Button
-                variant="contained"
-                color="primary"
+                key={`sug-${index}`}
+                variant="outlined"
                 onClick={() => getSelectedSuggestion(suggestion)}
                 sx={{
-                  backgroundColor: "#F7F6F5",
-                  minWidth: "100%",
-                  maxWidth: isToggledWidth ? "90%" : "70%",
-                  border: "1px solid",
-                  borderRadius: "20px",
-                  color: "#000000",
-                  "&:hover": {
-                    backgroundColor: "#725ce1",
-                    color: "#ffffff",
-                  },
                   textTransform: "none",
-                  "&:focus": {
-                    outline: "none",
-                  },
+                  borderRadius: "20px",
+                  border: "1px solid #e0e0e0",
+                  color: "#333",
+                  backgroundColor: "#F7F6F5",
+                  "&:hover": { backgroundColor: "#e8e8e8" },
+                  alignSelf: "flex-start",
+                  maxWidth: isToggledWidth ? "90%" : "70%",
                 }}
               >
                 {suggestion}
               </Button>
             ))}
+ 
+          {/* Locations */}
+          {/* {history?.locations?.length > 0 && (
+            <>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#666",
+                  fontWeight: 500,
+                  marginTop: "8px",
+                  marginBottom: "4px",
+                }}
+              >
+                Here are the available locations:
+              </Typography>
+ 
+              {history.locations.map((loc, index) => (
+                <Button
+                  key={`loc-${index}`}
+                  variant="contained"
+                  color="primary"
+                  onClick={() => getSelectedLocation(loc)}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: "20px",
+                    backgroundColor: "#725ce1",
+                    "&:hover": { backgroundColor: "#5b46c7" },
+                    alignSelf: "flex-start",
+                    maxWidth: isToggledWidth ? "90%" : "70%",
+                  }}
+                >
+                  {loc.displayName}
+                </Button>
+              ))}
+            </>
+          )} */}
+          {history?.locations?.length > 0 && (
+            <>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#666",
+                  fontWeight: 500,
+                  marginTop: "8px",
+                  marginBottom: "4px",
+                }}
+              >
+                Here are the available locations:
+              </Typography>
+ 
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                }}
+              >
+                {history.locations.map((loc, index) => (
+                  <Button
+                    key={`loc-${index}`}
+                    variant="contained"
+                    color="primary"
+                    onClick={() => getSelectedLocation(loc)}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: "20px",
+                      backgroundColor: "#725ce1",
+                      "&:hover": { backgroundColor: "#5b46c7" },
+                      maxWidth: isToggledWidth ? "90%" : "70%",
+                    }}
+                  >
+                    {loc.displayName}
+                  </Button>
+                ))}
+              </Box>
+            </>
+          )}
         </Stack>
       </Grid>
     );
   };
-
+ 
   const userMessages = (history, i) => {
     return (
       <Stack
@@ -152,7 +260,7 @@ const ChatMessages = ({
               dangerouslySetInnerHTML={{ __html: history?.text }}
             ></Typography>
           </Box>
-
+ 
           <Typography align="right" variant="subtitle2" color="textSecondary">
             {history.time}
           </Typography>
@@ -172,7 +280,7 @@ const ChatMessages = ({
       </Stack>
     );
   };
-
+ 
   const botMessages = (history, i) => {
     return (
       <Stack
@@ -196,7 +304,7 @@ const ChatMessages = ({
             }}
           />
         </Box>
-
+ 
         {history?.type === "loading" ? (
           <Typography
             fontSize="1rem"
@@ -221,7 +329,7 @@ const ChatMessages = ({
                 dangerouslySetInnerHTML={{ __html: history?.text }}
               ></Typography>
             </Box>
-
+ 
             <Typography align="left" variant="subtitle2" color="textSecondary">
               {history?.time}
             </Typography>
@@ -231,7 +339,7 @@ const ChatMessages = ({
       </Stack>
     );
   };
-
+ 
   return (
     <Grid
       container
@@ -268,7 +376,7 @@ const ChatMessages = ({
           botMessages(history, i)
         );
       })}
-
+ 
       {/* Floating Scroll-to-bottom Button */}
       {/* <Fade in={showScrollButton}>
         <IconButton
@@ -291,5 +399,5 @@ const ChatMessages = ({
     </Grid>
   );
 };
-
+ 
 export default memo(ChatMessages);

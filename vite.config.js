@@ -16,8 +16,8 @@ export default defineConfig(({ mode }) => {
             entry: "src/widget.jsx",
             name: "ChatWidget",
             fileName: "chat-widget",
-            formats: ["iife"], // Standalone <script> build
-          },
+            formats: ["iife"], 
+          },  
           rollupOptions: {
             output: {
               globals: {

@@ -194,6 +194,51 @@ const ChatWidget = ({ botReposition }) => {
     });
   };
 
+  // const handleGetBotResponse = (payload) => {
+  //   const d = new Date();
+  //   fetchBotResponse(payload)
+  //     .then((res) => {
+  //       removeLoadingIndicator();
+  //       if (res) {
+  //         const newMessage = {
+  //           from: "bot",
+  //           text: res?.reply,
+  //           time: d.toLocaleTimeString([], options),
+  //         };
+  //         if (res?.suggestions?.length > 0) {
+  //           newMessage["suggestions"] = res.suggestions;
+  //         }
+  //         setConversationData((prevState) => [...prevState, newMessage]);
+  //         if (res?.data) {
+  //           const allCarsData = Object.values(res.data)
+  //             .filter((val) => typeof val === "object" && val !== null)
+  //             .flatMap((models) =>
+  //               Object.values(models)
+  //                 .filter((cars) => Array.isArray(cars) && cars.length > 0)
+  //                 .flat()
+  //             );
+
+  //           if (allCarsData.length > 0) {
+  //             const newMessage = {
+  //               from: "bot",
+  //               carsData: allCarsData,
+  //             };
+  //             setConversationData((prev) => [...prev, newMessage]);
+  //           }
+  //         }
+  //       }
+  //     })
+  //     .catch((err) => {
+  //       removeLoadingIndicator();
+  //       const newMessage = {
+  //         from: "bot",
+  //         text: "System ran into issue. Please try again later.",
+  //         time: d.toLocaleTimeString([], options),
+  //       };
+  //       setConversationData((prevState) => [...prevState, newMessage]);
+  //     });
+  // };
+
   const handleGetBotResponse = (payload) => {
     const d = new Date();
     fetchBotResponse(payload)
@@ -205,10 +250,18 @@ const ChatWidget = ({ botReposition }) => {
             text: res?.reply,
             time: d.toLocaleTimeString([], options),
           };
+
           if (res?.suggestions?.length > 0) {
             newMessage["suggestions"] = res.suggestions;
           }
+
+          if (res?.locations?.length > 0) {
+            newMessage["locations"] = res.locations;
+          }
+
           setConversationData((prevState) => [...prevState, newMessage]);
+
+          // handle cars data
           if (res?.data) {
             const allCarsData = Object.values(res.data)
               .filter((val) => typeof val === "object" && val !== null)
@@ -238,6 +291,27 @@ const ChatWidget = ({ botReposition }) => {
         setConversationData((prevState) => [...prevState, newMessage]);
       });
   };
+
+  const handleGetSelectedLocation = useCallback(
+    (location) => {
+      if (!location?.id || responseLoading) return;
+      const d = new Date();
+      const newMessage = {
+        from: "user",
+        text: `<strong>${location.displayName}</strong>`,
+        time: d.toLocaleTimeString([], options),
+      };
+      setConversationData((prev) => [...prev, newMessage]);
+      addLoadingIndicator();
+      const payload = {
+        message: `User selected location ${location.displayName} (${location.id})`,
+        locationId: location.id,
+        session_id: sessionStorage.getItem("conversationId"),
+      };
+      handleGetBotResponse(payload);
+    },
+    [responseLoading]
+  );
 
   const handleOnsend = async (input, rest) => {
     let userMessage = input || message;
@@ -406,7 +480,7 @@ const ChatWidget = ({ botReposition }) => {
     setIsTranscribing(true);
     const simulateDelay = (ms) => new Promise((r) => setTimeout(r, ms));
     await simulateDelay(1000);
-    if(isListening) setMessage(transcriptMsg);
+    if (isListening) setMessage(transcriptMsg);
     stopSpeechRecognition();
   };
 
@@ -661,11 +735,18 @@ const ChatWidget = ({ botReposition }) => {
               }}
               paddingTop="0px !important"
             >
+              {/* <ChatMessages
+                data={conversationData}
+                isToggledWidth={isToggleWidth}
+                getSelectedCar={handleGetSelectedCar}
+                getSelectedSuggestion={handleGetSelectedSuggestion}
+              /> */}
               <ChatMessages
                 data={conversationData}
                 isToggledWidth={isToggleWidth}
                 getSelectedCar={handleGetSelectedCar}
                 getSelectedSuggestion={handleGetSelectedSuggestion}
+                getSelectedLocation={handleGetSelectedLocation}
               />
             </Grid>
 
